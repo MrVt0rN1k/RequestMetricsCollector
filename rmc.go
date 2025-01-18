@@ -29,13 +29,13 @@ var (
 	requestsPerSecond                                                                int
 	block                                                                            int
 	req                                                                              *http.Request
-	response                                                                         *http.Response
+	resp                                                                             *http.Response
 )
 
 func main() {
 	flag.StringVar(&jsonData, "d", `{"jsonrpc": "2.0","method": "eth_blockNumber","params": [],"id": "getblock.io"}`, "Request you want to use")
 	flag.StringVar(&url, "u", "https://go.getblock.io/c0f16139fdfe439eaab426f21dc94e70", "url")
-	flag.IntVar(&duration, "t", 1, "Lead Time")
+	flag.IntVar(&duration, "t", 30, "Lead Time")
 	flag.IntVar(&requestsPerSecond, "r", 5, "RPS")
 	flag.IntVar(&block, "b", 0, "Block number for methed get_block on sol")
 	flag.Parse()
@@ -51,7 +51,7 @@ func main() {
 	counter504 = 0
 	allSizeFile = 0
 	var wg sync.WaitGroup
-	duration := time.Duration(duration) * time.Minute
+	duration := time.Duration(duration) * time.Second
 	startTime := time.Now()
 	for time.Since(startTime) < duration {
 		for i := 0; i < requestsPerSecond; i++ {

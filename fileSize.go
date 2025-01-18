@@ -1,23 +1,10 @@
 package main
 
-import (
-	"fmt"
-	"net/http"
-	"strconv"
-)
-
-func fileSize(resp *http.Response) {
-	defer resp.Body.Close()
-	contentLength := resp.Header.Get("Content-Length")
-	length, err := strconv.Atoi(contentLength)
+func fileSize(length int) {
 	if length < 1024 {
 		size = length
 	} else {
 		size = length / 1024
-	}
-	if err != nil {
-		fmt.Println("Error converting Content-Length to integer:", err)
-		return
 	}
 
 	switch {
