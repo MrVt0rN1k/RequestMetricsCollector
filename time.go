@@ -171,6 +171,7 @@ func makePostRequest(url string, jsonData string, wg *sync.WaitGroup) {
 }
 
 func makeWssRequest(url string, jsonData string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	dialer := websocket.DefaultDialer
 
 	conn, _, err := dialer.Dial(url, nil)
