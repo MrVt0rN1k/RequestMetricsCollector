@@ -1,17 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
-	"io"
 	"net/http"
-	"regexp"
-	"strconv"
 	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 var (
@@ -24,175 +18,19 @@ var (
 	between8000and9000ms, between9000and10000ms, between10000and11000ms, between11000and12000ms, between12000and13000ms, between13000and14000ms,
 	between14000and15000ms, between15000and16000ms, between16000and17000ms, between17000and18000ms, between18000and19000ms, between19000and20000ms,
 	morethan20000ms int
-	size, allSizeFile, less1mb, between1mband5mb, between5mband10mb, more10bm, size0 int
+	size, size0, allSizeFile, less1mb, between1mband5mb, between5mband10mb, more10bm int
 	allResponceTime                                                                  time.Duration
 	avarageTime                                                                      time.Duration
+	responseTime                                                                     time.Duration
 	mutex                                                                            sync.Mutex
 	jsonData                                                                         string
 	url                                                                              string
 	duration                                                                         int
 	requestsPerSecond                                                                int
 	block                                                                            int
+	req                                                                              *http.Request
+	response                                                                         *http.Response
 )
-
-func makePostRequest(url string, jsonData string, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	startTime := time.Now()
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(jsonData)))
-	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
-		return
-	}
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
-		fmt.Printf("client: error reading response body: %s\n", err)
-		return
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept-Encoding", "gzip")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Printf("Error making request: %v\n", err)
-		return
-	}
-
-	defer resp.Body.Close()
-	contentLength := resp.Header.Get("Content-Length")
-	length, err := strconv.Atoi(contentLength)
-	size = length / 1024
-	if err != nil {
-		fmt.Println("Error converting Content-Length to integer:", err)
-		return
-	}
-
-	switch {
-	case size > 0 && size <= 1000:
-		less1mb++
-	case size > 1000 && size <= 5000:
-		between1mband5mb++
-	case size > 5000 && size <= 10000:
-		between5mband10mb++
-	case size >= 10000:
-		more10bm++
-	default:
-		size0++
-	}
-
-	lookFor := "code"
-	refString := string(body)
-	pattern := regexp.MustCompile(`\b` + regexp.QuoteMeta(lookFor) + `\b`)
-	if pattern.MatchString(refString) {
-		countError++
-	}
-
-	switch {
-	case resp.StatusCode == 200:
-		counter200++
-	case resp.StatusCode == 500:
-		counter500++
-	case resp.StatusCode == 502:
-		counter502++
-	case resp.StatusCode == 503:
-		counter503++
-	case resp.StatusCode == 504:
-		counter504++
-	default:
-		counterOther++
-	}
-	endTime := time.Now()
-	responseTime := endTime.Sub(startTime)
-	allResponceTime += responseTime
-	mutex.Lock()
-	responseCounter++
-	avarageTime = allResponceTime / time.Duration(responseCounter)
-	fmt.Printf("\r\033[1;36mWorking time: %v ", allResponceTime)
-
-	allSizeFile += size
-	switch {
-	case responseTime < 100*time.Millisecond:
-		less100ms++
-	case responseTime >= 100*time.Millisecond && responseTime < 200*time.Millisecond:
-		between100and200ms++
-	case responseTime >= 200*time.Millisecond && responseTime < 300*time.Millisecond:
-		between200and300ms++
-	case responseTime >= 300*time.Millisecond && responseTime < 400*time.Millisecond:
-		between300and400ms++
-	case responseTime >= 400*time.Millisecond && responseTime < 500*time.Millisecond:
-		between400and500ms++
-	case responseTime >= 500*time.Millisecond && responseTime < 1*time.Second:
-		between500and1000ms++
-	case responseTime >= 1*time.Second && responseTime < 2*time.Second:
-		between1000and2000ms++
-	case responseTime >= 2*time.Second && responseTime < 3*time.Second:
-		between2000and3000ms++
-	case responseTime >= 3*time.Second && responseTime < 4*time.Second:
-		between3000and4000ms++
-	case responseTime >= 4*time.Second && responseTime < 5*time.Second:
-		between4000and5000ms++
-	case responseTime >= 5*time.Second && responseTime < 6*time.Second:
-		between5000and6000ms++
-	case responseTime >= 6*time.Second && responseTime < 7*time.Second:
-		between6000and7000ms++
-	case responseTime >= 7*time.Second && responseTime < 8*time.Second:
-		between7000and8000ms++
-	case responseTime >= 8*time.Second && responseTime < 9*time.Second:
-		between8000and9000ms++
-	case responseTime >= 9*time.Second && responseTime < 10*time.Second:
-		between9000and10000ms++
-	case responseTime >= 10*time.Second && responseTime < 11*time.Second:
-		between10000and11000ms++
-	case responseTime >= 11*time.Second && responseTime < 12*time.Second:
-		between11000and12000ms++
-	case responseTime >= 12*time.Second && responseTime < 13*time.Second:
-		between12000and13000ms++
-	case responseTime >= 13*time.Second && responseTime < 14*time.Second:
-		between13000and14000ms++
-	case responseTime >= 14*time.Second && responseTime < 15*time.Second:
-		between14000and15000ms++
-	case responseTime >= 15*time.Second && responseTime < 16*time.Second:
-		between15000and16000ms++
-	case responseTime >= 16*time.Second && responseTime < 17*time.Second:
-		between16000and17000ms++
-	case responseTime >= 17*time.Second && responseTime < 18*time.Second:
-		between17000and18000ms++
-	case responseTime >= 18*time.Second && responseTime < 19*time.Second:
-		between18000and19000ms++
-	case responseTime >= 19*time.Second && responseTime < 20*time.Second:
-		between19000and20000ms++
-	default:
-		morethan20000ms++
-	}
-	mutex.Unlock()
-}
-
-func makeWssRequest(url string, jsonData string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	dialer := websocket.DefaultDialer
-
-	conn, _, err := dialer.Dial(url, nil)
-	if err != nil {
-		fmt.Println("Error on connection:", err)
-	}
-
-	err = conn.WriteJSON(jsonData)
-	if err != nil {
-		fmt.Println("Error on send request:", err)
-		return
-	}
-
-	err = conn.ReadJSON(&jsonData)
-	if err != nil {
-		fmt.Println("Error on read answer:", err)
-		return
-	}
-	fmt.Printf("%+v\n", jsonData)
-	defer conn.Close()
-}
 
 func main() {
 	flag.StringVar(&jsonData, "d", `{"jsonrpc": "2.0","method": "eth_blockNumber","params": [],"id": "getblock.io"}`, "Request you want to use")
