@@ -1,5 +1,9 @@
 package main
 
+var (
+	size, allSizeFile, less1mb, between1mband5mb, between5mband10mb, more10bm int
+)
+
 func fileSize(length int) {
 	if length < 1024 {
 		size = length
@@ -16,8 +20,6 @@ func fileSize(length int) {
 		between5mband10mb++
 	case size >= 10000:
 		more10bm++
-	default:
-		size0++
 	}
 	allSizeFile += size
 }

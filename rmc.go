@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 )
@@ -18,18 +17,14 @@ var (
 	between8000and9000ms, between9000and10000ms, between10000and11000ms, between11000and12000ms, between12000and13000ms, between13000and14000ms,
 	between14000and15000ms, between15000and16000ms, between16000and17000ms, between17000and18000ms, between18000and19000ms, between19000and20000ms,
 	morethan20000ms int
-	size, size0, allSizeFile, less1mb, between1mband5mb, between5mband10mb, more10bm int
-	allResponceTime                                                                  time.Duration
-	avarageTime                                                                      time.Duration
-	responseTime                                                                     time.Duration
-	mutex                                                                            sync.Mutex
-	jsonData                                                                         string
-	url                                                                              string
-	duration                                                                         int
-	requestsPerSecond                                                                int
-	block                                                                            int
-	req                                                                              *http.Request
-	resp                                                                             *http.Response
+	allResponceTime   time.Duration
+	avarageTime       time.Duration
+	mutex             sync.Mutex
+	jsonData          string
+	url               string
+	duration          int
+	requestsPerSecond int
+	block             int
 )
 
 func main() {
@@ -56,7 +51,11 @@ func main() {
 	for time.Since(startTime) < duration {
 		for i := 0; i < requestsPerSecond; i++ {
 			wg.Add(1)
-			go makePostRequest(url, jsonData, &wg)
+			if url != "" {
+				go makePostRequest(url, jsonData, &wg)
+			} else {
+				makeWssRequest(url, jsonData, &wg)
+			}
 		}
 		time.Sleep(1 * time.Second)
 		block++
